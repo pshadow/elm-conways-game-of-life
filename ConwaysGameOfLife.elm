@@ -24,10 +24,16 @@ main =
 
 type alias Model =
     { rows : Rows
-    , gameStarted : Bool
+    , gameState : GameState
     , cellSize : String
     , timeIntervalInSec : Float
     }
+
+
+type GameState
+    = Started
+    | Stopped
+    | GameOver
 
 
 type alias Rows =
@@ -49,7 +55,7 @@ init =
     ( { rows =
             Array.repeat numberOfRow <|
                 Array.repeat numberOfCol { isAlive = False }
-      , gameStarted = False
+      , gameState = Stopped
       , cellSize = "12px"
       , timeIntervalInSec = 1
       }
@@ -62,24 +68,32 @@ init =
 
 
 type Msg
-    = ChangeGameStatus
-    | ResetGame
-    | UpdateCell Int Int
+    = StartOrStopButtonPressed
+    | ResetButtonPressed
+    | CellClicked Int Int
     | EvolveCells Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ChangeGameStatus ->
-            ( { model | gameStarted = not model.gameStarted }
+        StartOrStopButtonPressed ->
+            ( case model.gameState of
+                Started ->
+                    { model | gameState = Stopped }
+
+                Stopped ->
+                    { model | gameState = Started }
+
+                _ ->
+                    { model | gameState = Started }
             , Cmd.none
             )
 
-        ResetGame ->
+        ResetButtonPressed ->
             init
 
-        UpdateCell colNumber rowNumber ->
+        CellClicked colNumber rowNumber ->
             ( changeCell rowNumber colNumber model
             , Cmd.none
             )
@@ -114,15 +128,36 @@ changeCell rowNumber colNumber model =
                     in
                         { model
                             | rows = newRows
+                            , gameState =
+                                if model.gameState == GameOver then
+                                    Stopped
+                                else
+                                    model.gameState
                         }
 
 
 evolveRows : Model -> Model
 evolveRows model =
-    if not model.gameStarted then
-        model
-    else
-        { model | rows = Array.indexedMap (evolveRow model) model.rows }
+    case model.gameState of
+        Started ->
+            let
+                newRows =
+                    Array.indexedMap (evolveRow model) model.rows
+            in
+                { model
+                    | rows = newRows
+                    , gameState =
+                        if (hasLivingCellInRows newRows) then
+                            model.gameState
+                        else
+                            GameOver
+                }
+
+        Stopped ->
+            model
+
+        GameOver ->
+            model
 
 
 evolveRow : Model -> Int -> Row -> Row
@@ -177,6 +212,22 @@ isLivingCell rowNumber colNumber rows =
             0
 
 
+hasLivingCellInRows : Rows -> Bool
+hasLivingCellInRows rows =
+    Array.map hasLivingCellInRow rows
+        |> Array.filter identity
+        |> Array.isEmpty
+        |> not
+
+
+hasLivingCellInRow : Row -> Bool
+hasLivingCellInRow row =
+    Array.map (\cell -> cell.isAlive) row
+        |> Array.filter identity
+        |> Array.isEmpty
+        |> not
+
+
 
 -- SUBSCRIPTIONS
 
@@ -195,14 +246,37 @@ view model =
     let
         getBottonText : String
         getBottonText =
-            if model.gameStarted then
-                "Stop"
-            else
-                "Start"
+            case model.gameState of
+                Started ->
+                    "Stop"
+
+                Stopped ->
+                    "Start"
+
+                GameOver ->
+                    "Start"
+
+        -- if model.gameState then
+        --     "Stop"
+        -- else
+        --     "Start"
     in
         div []
-            [ viewBotton False ChangeGameStatus getBottonText
-            , viewBotton model.gameStarted ResetGame "Reset"
+            [ viewBotton False StartOrStopButtonPressed getBottonText
+            , viewBotton
+                (case model.gameState of
+                    Started ->
+                        True
+
+                    Stopped ->
+                        False
+
+                    GameOver ->
+                        True
+                )
+                ResetButtonPressed
+                "Reset"
+              -- , viewBotton model.gameState ResetButtonPressed "Reset"
             , div
                 [ Html.Attributes.style
                     [ ( "display", "inline-block" )
@@ -210,12 +284,10 @@ view model =
                     ]
                 ]
                 [ text
-                    (if (hasLivingCellInRows model) then
-                        "There's Live!"
-                     else if model.gameStarted then
+                    (if model.gameState == GameOver then
                         "Game Over :'("
                      else
-                        "No Living Cell."
+                        ""
                     )
                 ]
             , viewRows model
@@ -268,22 +340,6 @@ viewCell cellSize rowNumber colNumber cell =
                     "#ffffff"
               )
             ]
-        , Html.Events.onClick <| UpdateCell colNumber rowNumber
+        , Html.Events.onClick <| CellClicked colNumber rowNumber
         ]
         []
-
-
-hasLivingCellInRows : Model -> Bool
-hasLivingCellInRows model =
-    Array.map hasLivingCellInRow model.rows
-        |> Array.filter identity
-        |> Array.isEmpty
-        |> not
-
-
-hasLivingCellInRow : Row -> Bool
-hasLivingCellInRow row =
-    Array.map (\cell -> cell.isAlive) row
-        |> Array.filter identity
-        |> Array.isEmpty
-        |> not
