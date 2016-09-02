@@ -329,7 +329,7 @@ viewCell cellSize rowNumber colNumber cell =
             , ( "border", "1px solid gray" )
             , ( "background-color"
               , if cell.isAlive then
-                    "black"
+                    "#ff8800"
                 else
                     "#ffffff"
               )
