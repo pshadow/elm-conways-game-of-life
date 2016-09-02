@@ -255,11 +255,6 @@ view model =
 
                 GameOver ->
                     "Start"
-
-        -- if model.gameState then
-        --     "Stop"
-        -- else
-        --     "Start"
     in
         div []
             [ viewBotton False StartOrStopButtonPressed getBottonText
@@ -276,7 +271,6 @@ view model =
                 )
                 ResetButtonPressed
                 "Reset"
-              -- , viewBotton model.gameState ResetButtonPressed "Reset"
             , div
                 [ Html.Attributes.style
                     [ ( "display", "inline-block" )
