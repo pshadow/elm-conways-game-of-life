@@ -23,7 +23,7 @@ main =
 
 
 type alias Model =
-    { rows : Rows
+    { board : Board
     , gameState : GameState
     , cellSize : String
     , timeIntervalInSec : Float
@@ -36,7 +36,7 @@ type GameState
     | GameOver
 
 
-type alias Rows =
+type alias Board =
     Array Row
 
 
@@ -52,14 +52,14 @@ init : ( Model, Cmd Msg )
 init =
     let
         ( numberOfRow, numberOfCol ) =
-            ( 50, 80 )
+            ( 80, 80 )
     in
-        ( { rows =
+        ( { board =
                 Array.repeat numberOfRow <|
                     Array.repeat numberOfCol { isAlive = False }
           , gameState = Stopped
           , cellSize = "12px"
-          , timeIntervalInSec = 0.5
+          , timeIntervalInSec = 0.2
           }
         , Cmd.none
         )
@@ -70,29 +70,24 @@ init =
 
 
 type Msg
-    = StartOrStopButtonPressed
-    | ResetButtonPressed
+    = StartOrStopButtonClicked
+    | ResetButtonClicked
     | CellClicked Int Int
-    | EvolveCells Time
+    | UpdateGame Time
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        StartOrStopButtonPressed ->
-            ( case model.gameState of
-                Started ->
-                    { model | gameState = Stopped }
-
-                Stopped ->
-                    { model | gameState = Started }
-
-                GameOver ->
-                    { model | gameState = Started }
+        StartOrStopButtonClicked ->
+            ( if model.gameState == Started then
+                { model | gameState = Stopped }
+              else
+                { model | gameState = Started }
             , Cmd.none
             )
 
-        ResetButtonPressed ->
+        ResetButtonClicked ->
             init
 
         CellClicked colNumber rowNumber ->
@@ -100,15 +95,15 @@ update msg model =
             , Cmd.none
             )
 
-        EvolveCells intervel ->
-            ( evolveRows model
+        UpdateGame intervel ->
+            ( getNextModel model
             , Cmd.none
             )
 
 
 changeCell : Int -> Int -> Model -> Model
 changeCell rowNumber colNumber model =
-    case (Array.get rowNumber model.rows) of
+    case (Array.get rowNumber model.board) of
         Nothing ->
             model
 
@@ -125,11 +120,11 @@ changeCell rowNumber colNumber model =
                                 { cell | isAlive = not cell.isAlive }
                                 row
 
-                        newRows =
-                            Array.set rowNumber newRow model.rows
+                        newBoard =
+                            Array.set rowNumber newRow model.board
                     in
                         { model
-                            | rows = newRows
+                            | board = newBoard
                             , gameState =
                                 if model.gameState == GameOver then
                                     Stopped
@@ -138,40 +133,40 @@ changeCell rowNumber colNumber model =
                         }
 
 
-evolveRows : Model -> Model
-evolveRows model =
-    case model.gameState of
-        Started ->
-            let
-                newRows =
-                    Array.indexedMap (evolveRow model) model.rows
-            in
-                { model
-                    | rows = newRows
-                    , gameState =
-                        if (hasLivingCellInRows newRows) then
-                            model.gameState
-                        else
-                            GameOver
-                }
+getNextModel : Model -> Model
+getNextModel model =
+    let
+        newBoard =
+            -- Array.indexedMap (getNextRow model) model.board
+            getNextBoard model
 
-        Stopped ->
-            model
-
-        GameOver ->
-            model
+        newGameState =
+            if (hasLivingCellInBoard newBoard) then
+                model.gameState
+            else
+                GameOver
+    in
+        { model
+            | board = newBoard
+            , gameState = newGameState
+        }
 
 
-evolveRow : Model -> Int -> Row -> Row
-evolveRow model rowNumber row =
-    Array.indexedMap (evolveCell model rowNumber) row
+getNextBoard : Model -> Board
+getNextBoard model =
+    Array.indexedMap (getNextRow model) model.board
 
 
-evolveCell : Model -> Int -> Int -> Cell -> Cell
-evolveCell model rowNumber colNumber cell =
+getNextRow : Model -> Int -> Row -> Row
+getNextRow model rowNumber row =
+    Array.indexedMap (getNextCell model rowNumber) row
+
+
+getNextCell : Model -> Int -> Int -> Cell -> Cell
+getNextCell model rowNumber colNumber cell =
     let
         livingNeighberNumber =
-            getLivingNeighberNumber rowNumber colNumber model.rows
+            getLivingNeighberNumber rowNumber colNumber model.board
     in
         if cell.isAlive then
             if livingNeighberNumber < 2 || livingNeighberNumber > 3 then
@@ -184,21 +179,21 @@ evolveCell model rowNumber colNumber cell =
             cell
 
 
-getLivingNeighberNumber : Int -> Int -> Rows -> Int
-getLivingNeighberNumber rowNumber colNumber rows =
-    isLivingCell (rowNumber - 1) (colNumber - 1) rows
-        + isLivingCell (rowNumber - 1) (colNumber) rows
-        + isLivingCell (rowNumber - 1) (colNumber + 1) rows
-        + isLivingCell rowNumber (colNumber - 1) rows
-        + isLivingCell rowNumber (colNumber + 1) rows
-        + isLivingCell (rowNumber + 1) (colNumber - 1) rows
-        + isLivingCell (rowNumber + 1) (colNumber) rows
-        + isLivingCell (rowNumber + 1) (colNumber + 1) rows
+getLivingNeighberNumber : Int -> Int -> Board -> Int
+getLivingNeighberNumber rowNumber colNumber board =
+    isLivingCell (rowNumber - 1) (colNumber - 1) board
+        + isLivingCell (rowNumber - 1) (colNumber) board
+        + isLivingCell (rowNumber - 1) (colNumber + 1) board
+        + isLivingCell rowNumber (colNumber - 1) board
+        + isLivingCell rowNumber (colNumber + 1) board
+        + isLivingCell (rowNumber + 1) (colNumber - 1) board
+        + isLivingCell (rowNumber + 1) (colNumber) board
+        + isLivingCell (rowNumber + 1) (colNumber + 1) board
 
 
-isLivingCell : Int -> Int -> Rows -> Int
-isLivingCell rowNumber colNumber rows =
-    case (Array.get rowNumber rows) of
+isLivingCell : Int -> Int -> Board -> Int
+isLivingCell rowNumber colNumber board =
+    case (Array.get rowNumber board) of
         Just row ->
             case (Array.get colNumber row) of
                 Just cell ->
@@ -214,9 +209,9 @@ isLivingCell rowNumber colNumber rows =
             0
 
 
-hasLivingCellInRows : Rows -> Bool
-hasLivingCellInRows rows =
-    Array.map hasLivingCellInRow rows
+hasLivingCellInBoard : Board -> Bool
+hasLivingCellInBoard board =
+    Array.map hasLivingCellInRow board
         |> Array.filter identity
         |> Array.isEmpty
         |> not
@@ -236,7 +231,10 @@ hasLivingCellInRow row =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every (model.timeIntervalInSec * Time.second) EvolveCells
+    if model.gameState == Started then
+        Time.every (model.timeIntervalInSec * Time.second) UpdateGame
+    else
+        Sub.none
 
 
 
@@ -248,25 +246,21 @@ view model =
     let
         getBottonText : String
         getBottonText =
-            case model.gameState of
-                Started ->
-                    "Stop"
-
-                _ ->
-                    "Start"
+            if model.gameState == Started then
+                "Stop"
+            else
+                "Start"
     in
         div []
-            [ viewBotton False StartOrStopButtonPressed getBottonText
+            [ viewBotton False StartOrStopButtonClicked getBottonText
             , viewBotton
-                (case model.gameState of
-                    -- only allow user to reset when game stopped
-                    Stopped ->
-                        False
-
-                    _ ->
-                        True
+                (-- only allow user to reset when game stopped
+                 if model.gameState == Stopped then
+                    False
+                 else
+                    True
                 )
-                ResetButtonPressed
+                ResetButtonClicked
                 "Reset"
             , div
                 [ Html.Attributes.style
@@ -281,7 +275,7 @@ view model =
                         ""
                     )
                 ]
-            , viewRows model
+            , viewBoard model
             ]
 
 
@@ -300,14 +294,14 @@ viewBotton isDisabled msg text =
         [ Html.text text ]
 
 
-viewRows : Model -> Html Msg
-viewRows model =
+viewBoard : Model -> Html Msg
+viewBoard model =
     let
-        rowsStyle =
+        boardStyle =
             [ ( "margin", "20px 20px" ) ]
     in
-        div [ Html.Attributes.style rowsStyle ]
-            [ Array.indexedMap (viewRow model.cellSize) model.rows
+        div [ Html.Attributes.style boardStyle ]
+            [ Array.indexedMap (viewRow model.cellSize) model.board
                 |> Array.toList
                 |> div []
             ]
