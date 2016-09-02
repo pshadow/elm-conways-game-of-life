@@ -24,8 +24,7 @@ main =
 
 type alias Model =
     { rows : Array Row
-    , gameStarted :
-        Bool
+    , gameStarted : Bool
     , cellSize : String
     , timeIntervalInSec : Float
     }
@@ -40,14 +39,15 @@ type alias Cell =
 
 
 ( numberOfRow, numberOfCol ) =
-    ( 70, 70 )
+    ( 50, 80 )
 init : ( Model, Cmd Msg )
 init =
     ( { rows =
-            Array.repeat numberOfRow (Array.repeat numberOfCol { isAlive = False })
+            Array.repeat numberOfRow <|
+                Array.repeat numberOfCol { isAlive = False }
       , gameStarted = False
       , cellSize = "12px"
-      , timeIntervalInSec = 1
+      , timeIntervalInSec = 0.5
       }
     , Cmd.none
     )
@@ -64,29 +64,26 @@ type Msg
     | EvolveCells Time
 
 
-
--- | Debug
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         ChangeGameStatus ->
-            ( { model | gameStarted = not model.gameStarted }, Cmd.none )
+            ( { model | gameStarted = not model.gameStarted }
+            , Cmd.none
+            )
 
         ResetGame ->
             init
 
         UpdateCell colNumber rowNumber ->
-            ( changeCell rowNumber colNumber model, Cmd.none )
+            ( changeCell rowNumber colNumber model
+            , Cmd.none
+            )
 
         EvolveCells intervel ->
-            ( evolve model, Cmd.none )
-
-
-
--- Debug ->
---     ( model, Cmd.none )
+            ( evolve model
+            , Cmd.none
+            )
 
 
 changeCell : Int -> Int -> Model -> Model
@@ -120,8 +117,7 @@ evolve model =
         model
     else
         { model
-            | rows =
-                Array.indexedMap (evolveRow model) model.rows
+            | rows = Array.indexedMap (evolveRow model) model.rows
         }
 
 
@@ -203,7 +199,6 @@ view model =
         div []
             [ viewBotton False ChangeGameStatus getBottonText
             , viewBotton model.gameStarted ResetGame "Reset"
-              -- , viewBotton False Debug "Debug"
             , viewBoard model
             ]
 
@@ -249,9 +244,9 @@ viewCell cellSize rowNumber colNumber cell =
             , ( "border", "1px solid gray" )
             , ( "background-color"
               , if cell.isAlive then
-                    "black"
+                    "#ff8800"
                 else
-                    "white"
+                    "#ffffff"
               )
             ]
         , Html.Events.onClick <| UpdateCell colNumber rowNumber
