@@ -23,11 +23,15 @@ main =
 
 
 type alias Model =
-    { rows : Array Row
+    { rows : Rows
     , gameStarted : Bool
     , cellSize : String
     , timeIntervalInSec : Float
     }
+
+
+type alias Rows =
+    Array Row
 
 
 type alias Row =
@@ -47,7 +51,7 @@ init =
                 Array.repeat numberOfCol { isAlive = False }
       , gameStarted = False
       , cellSize = "12px"
-      , timeIntervalInSec = 0.5
+      , timeIntervalInSec = 1
       }
     , Cmd.none
     )
@@ -81,7 +85,7 @@ update msg model =
             )
 
         EvolveCells intervel ->
-            ( evolve model
+            ( evolveRows model
             , Cmd.none
             )
 
@@ -108,17 +112,17 @@ changeCell rowNumber colNumber model =
                         newRows =
                             Array.set rowNumber newRow model.rows
                     in
-                        { model | rows = newRows }
+                        { model
+                            | rows = newRows
+                        }
 
 
-evolve : Model -> Model
-evolve model =
+evolveRows : Model -> Model
+evolveRows model =
     if not model.gameStarted then
         model
     else
-        { model
-            | rows = Array.indexedMap (evolveRow model) model.rows
-        }
+        { model | rows = Array.indexedMap (evolveRow model) model.rows }
 
 
 evolveRow : Model -> Int -> Row -> Row
@@ -143,7 +147,7 @@ evolveCell model rowNumber colNumber cell =
             cell
 
 
-getLivingNeighberNumber : Int -> Int -> Array Row -> Int
+getLivingNeighberNumber : Int -> Int -> Rows -> Int
 getLivingNeighberNumber rowNumber colNumber rows =
     isLivingCell (rowNumber - 1) (colNumber - 1) rows
         + isLivingCell (rowNumber - 1) (colNumber) rows
@@ -155,7 +159,7 @@ getLivingNeighberNumber rowNumber colNumber rows =
         + isLivingCell (rowNumber + 1) (colNumber + 1) rows
 
 
-isLivingCell : Int -> Int -> Array Row -> Int
+isLivingCell : Int -> Int -> Rows -> Int
 isLivingCell rowNumber colNumber rows =
     case (Array.get rowNumber rows) of
         Just row ->
@@ -199,7 +203,22 @@ view model =
         div []
             [ viewBotton False ChangeGameStatus getBottonText
             , viewBotton model.gameStarted ResetGame "Reset"
-            , viewBoard model
+            , div
+                [ Html.Attributes.style
+                    [ ( "display", "inline-block" )
+                    , ( "margin-left", "20px" )
+                    ]
+                ]
+                [ text
+                    (if (hasLivingCellInRows model) then
+                        "There's Live!"
+                     else if model.gameStarted then
+                        "Game Over :'("
+                     else
+                        "No Living Cell."
+                    )
+                ]
+            , viewRows model
             ]
 
 
@@ -218,8 +237,8 @@ viewBotton isDisabled msg text =
         [ Html.text text ]
 
 
-viewBoard : Model -> Html Msg
-viewBoard model =
+viewRows : Model -> Html Msg
+viewRows model =
     div [ Html.Attributes.style [ ( "margin", "20px 20px" ) ] ]
         [ Array.indexedMap (viewRow model.cellSize) model.rows
             |> Array.toList
@@ -244,7 +263,7 @@ viewCell cellSize rowNumber colNumber cell =
             , ( "border", "1px solid gray" )
             , ( "background-color"
               , if cell.isAlive then
-                    "#ff8800"
+                    "black"
                 else
                     "#ffffff"
               )
@@ -252,3 +271,19 @@ viewCell cellSize rowNumber colNumber cell =
         , Html.Events.onClick <| UpdateCell colNumber rowNumber
         ]
         []
+
+
+hasLivingCellInRows : Model -> Bool
+hasLivingCellInRows model =
+    Array.map hasLivingCellInRow model.rows
+        |> Array.filter identity
+        |> Array.isEmpty
+        |> not
+
+
+hasLivingCellInRow : Row -> Bool
+hasLivingCellInRow row =
+    Array.map (\cell -> cell.isAlive) row
+        |> Array.filter identity
+        |> Array.isEmpty
+        |> not
