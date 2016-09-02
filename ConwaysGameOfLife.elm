@@ -48,19 +48,21 @@ type alias Cell =
     { isAlive : Bool }
 
 
-( numberOfRow, numberOfCol ) =
-    ( 50, 80 )
 init : ( Model, Cmd Msg )
 init =
-    ( { rows =
-            Array.repeat numberOfRow <|
-                Array.repeat numberOfCol { isAlive = False }
-      , gameState = Stopped
-      , cellSize = "12px"
-      , timeIntervalInSec = 1
-      }
-    , Cmd.none
-    )
+    let
+        ( numberOfRow, numberOfCol ) =
+            ( 50, 80 )
+    in
+        ( { rows =
+                Array.repeat numberOfRow <|
+                    Array.repeat numberOfCol { isAlive = False }
+          , gameState = Stopped
+          , cellSize = "12px"
+          , timeIntervalInSec = 0.5
+          }
+        , Cmd.none
+        )
 
 
 
@@ -85,7 +87,7 @@ update msg model =
                 Stopped ->
                     { model | gameState = Started }
 
-                _ ->
+                GameOver ->
                     { model | gameState = Started }
             , Cmd.none
             )
@@ -172,7 +174,7 @@ evolveCell model rowNumber colNumber cell =
             getLivingNeighberNumber rowNumber colNumber model.rows
     in
         if cell.isAlive then
-            if (livingNeighberNumber < 2 || livingNeighberNumber > 3) then
+            if livingNeighberNumber < 2 || livingNeighberNumber > 3 then
                 { cell | isAlive = False }
             else
                 cell
@@ -250,23 +252,18 @@ view model =
                 Started ->
                     "Stop"
 
-                Stopped ->
-                    "Start"
-
-                GameOver ->
+                _ ->
                     "Start"
     in
         div []
             [ viewBotton False StartOrStopButtonPressed getBottonText
             , viewBotton
                 (case model.gameState of
-                    Started ->
-                        True
-
+                    -- only allow user to reset when game stopped
                     Stopped ->
                         False
 
-                    GameOver ->
+                    _ ->
                         True
                 )
                 ResetButtonPressed
@@ -305,35 +302,47 @@ viewBotton isDisabled msg text =
 
 viewRows : Model -> Html Msg
 viewRows model =
-    div [ Html.Attributes.style [ ( "margin", "20px 20px" ) ] ]
-        [ Array.indexedMap (viewRow model.cellSize) model.rows
-            |> Array.toList
-            |> div []
-        ]
+    let
+        rowsStyle =
+            [ ( "margin", "20px 20px" ) ]
+    in
+        div [ Html.Attributes.style rowsStyle ]
+            [ Array.indexedMap (viewRow model.cellSize) model.rows
+                |> Array.toList
+                |> div []
+            ]
 
 
 viewRow : String -> Int -> Row -> Html Msg
 viewRow cellSize rowNumber row =
-    Array.indexedMap (viewCell cellSize rowNumber) row
-        |> Array.toList
-        |> div [ Html.Attributes.style [ ( "height", cellSize ) ] ]
+    let
+        rowStyle =
+            [ ( "height", cellSize ) ]
+    in
+        Array.indexedMap (viewCell cellSize rowNumber) row
+            |> Array.toList
+            |> div [ Html.Attributes.style rowStyle ]
 
 
 viewCell : String -> Int -> Int -> Cell -> Html Msg
 viewCell cellSize rowNumber colNumber cell =
-    div
-        [ Html.Attributes.style
+    let
+        cellStyle =
             [ ( "display", "inline-block" )
             , ( "width", cellSize )
             , ( "height", "100%" )
             , ( "border", "1px solid gray" )
             , ( "background-color"
               , if cell.isAlive then
-                    "#ff8800"
+                    "#f80"
                 else
-                    "#ffffff"
+                    "#000"
               )
             ]
-        , Html.Events.onClick <| CellClicked colNumber rowNumber
-        ]
-        []
+    in
+        div
+            [ Html.Attributes.style
+                cellStyle
+            , Html.Events.onClick <| CellClicked colNumber rowNumber
+            ]
+            []
