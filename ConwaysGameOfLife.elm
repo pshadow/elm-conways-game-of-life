@@ -1,22 +1,10 @@
 module ConwaysGameOfLife exposing (..)
 
 import Html exposing (..)
-import Html.App
 import Html.Attributes
 import Html.Events
 import Array exposing (Array)
 import Time exposing (Time)
-
-
-main : Program Never
-main =
-    Html.App.program
-        { init = init
-        , view = view
-        , update = update
-        , subscriptions = subscriptions
-        }
-
 
 
 -- Model
