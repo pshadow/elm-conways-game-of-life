@@ -188,18 +188,24 @@ getNextCell model rowNumber colNumber cell =
 
 getLivingNeighberNumber : Int -> Int -> Board -> Int
 getLivingNeighberNumber rowNumber colNumber board =
-    isLivingCell (rowNumber - 1) (colNumber - 1) board
-        + isLivingCell (rowNumber - 1) (colNumber) board
-        + isLivingCell (rowNumber - 1) (colNumber + 1) board
-        + isLivingCell rowNumber (colNumber - 1) board
-        + isLivingCell rowNumber (colNumber + 1) board
-        + isLivingCell (rowNumber + 1) (colNumber - 1) board
-        + isLivingCell (rowNumber + 1) (colNumber) board
-        + isLivingCell (rowNumber + 1) (colNumber + 1) board
+    let
+        neighberLocations =
+            [ ( rowNumber - 1, colNumber - 1 )
+            , ( rowNumber - 1, colNumber )
+            , ( rowNumber - 1, colNumber + 1 )
+            , ( rowNumber, colNumber - 1 )
+            , ( rowNumber, colNumber + 1 )
+            , ( rowNumber + 1, colNumber - 1 )
+            , ( rowNumber + 1, colNumber )
+            , ( rowNumber + 1, colNumber + 1 )
+            ]
+    in
+        List.map (isLivingCell board) neighberLocations
+            |> List.sum
 
 
-isLivingCell : Int -> Int -> Board -> Int
-isLivingCell rowNumber colNumber board =
+isLivingCell : Board -> ( Int, Int ) -> Int
+isLivingCell board ( rowNumber, colNumber ) =
     case (Array.get rowNumber board) of
         Just row ->
             case (Array.get colNumber row) of
