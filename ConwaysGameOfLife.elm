@@ -70,7 +70,8 @@ init =
 
 
 type Msg
-    = StartOrStopButtonClicked
+    = StartButtonClicked
+    | StopButtonClicked
     | ResetButtonClicked
     | CellClicked Int Int
     | UpdateGame Time
@@ -79,11 +80,17 @@ type Msg
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        StartOrStopButtonClicked ->
-            ( if model.gameState == Started then
-                { model | gameState = Stopped }
-              else
+        StartButtonClicked ->
+            ( -- only start game when living cell exists
+              if (hasLivingCellInBoard model.board) then
                 { model | gameState = Started }
+              else
+                model
+            , Cmd.none
+            )
+
+        StopButtonClicked ->
+            ( { model | gameState = Stopped }
             , Cmd.none
             )
 
@@ -244,24 +251,23 @@ subscriptions model =
 view : Model -> Html Msg
 view model =
     let
-        getBottonText : String
-        getBottonText =
+        bottonText : String
+        bottonText =
             if model.gameState == Started then
                 "Stop"
             else
                 "Start"
+
+        bottonMsg : Msg
+        bottonMsg =
+            if model.gameState == Started then
+                StopButtonClicked
+            else
+                StartButtonClicked
     in
         div []
-            [ viewBotton False StartOrStopButtonClicked getBottonText
-            , viewBotton
-                (-- only allow user to reset when game stopped
-                 if model.gameState == Stopped then
-                    False
-                 else
-                    True
-                )
-                ResetButtonClicked
-                "Reset"
+            [ viewBotton bottonMsg bottonText
+            , viewBotton ResetButtonClicked "Reset"
             , div
                 [ Html.Attributes.style
                     [ ( "display", "inline-block" )
@@ -279,8 +285,8 @@ view model =
             ]
 
 
-viewBotton : Bool -> Msg -> String -> Html Msg
-viewBotton isDisabled msg text =
+viewBotton : Msg -> String -> Html Msg
+viewBotton msg text =
     button
         [ Html.Attributes.style
             [ ( "width", "80px" )
@@ -288,7 +294,6 @@ viewBotton isDisabled msg text =
             , ( "margin-top", "20px" )
             , ( "margin-left", "20px" )
             ]
-        , Html.Attributes.disabled isDisabled
         , Html.Events.onClick msg
         ]
         [ Html.text text ]
