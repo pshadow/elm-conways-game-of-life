@@ -8314,8 +8314,8 @@ var _elm_lang$html$Html_Events$Options = F2(
 	function (a, b) {
 		return {stopPropagation: a, preventDefault: b};
 	});
-var _user$project$ConwaysGameOfLife$viewBotton = F3(
-	function (isDisabled, msg, text) {
+var _user$project$ConwaysGameOfLife$viewBotton = F2(
+	function (msg, text) {
 		return A2(
 			_elm_lang$html$Html$button,
 			_elm_lang$core$Native_List.fromArray(
@@ -8328,7 +8328,6 @@ var _user$project$ConwaysGameOfLife$viewBotton = F3(
 							{ctor: '_Tuple2', _0: 'margin-top', _1: '20px'},
 							{ctor: '_Tuple2', _0: 'margin-left', _1: '20px'}
 						])),
-					_elm_lang$html$Html_Attributes$disabled(isDisabled),
 					_elm_lang$html$Html_Events$onClick(msg)
 				]),
 			_elm_lang$core$Native_List.fromArray(
@@ -8357,13 +8356,14 @@ var _user$project$ConwaysGameOfLife$hasLivingCellInBoard = function (board) {
 				_elm_lang$core$Basics$identity,
 				A2(_elm_lang$core$Array$map, _user$project$ConwaysGameOfLife$hasLivingCellInRow, board))));
 };
-var _user$project$ConwaysGameOfLife$isLivingCell = F3(
-	function (rowNumber, colNumber, board) {
-		var _p0 = A2(_elm_lang$core$Array$get, rowNumber, board);
-		if (_p0.ctor === 'Just') {
-			var _p1 = A2(_elm_lang$core$Array$get, colNumber, _p0._0);
-			if (_p1.ctor === 'Just') {
-				return _p1._0.isAlive ? 1 : 0;
+var _user$project$ConwaysGameOfLife$isLivingCell = F2(
+	function (board, _p0) {
+		var _p1 = _p0;
+		var _p2 = A2(_elm_lang$core$Array$get, _p1._0, board);
+		if (_p2.ctor === 'Just') {
+			var _p3 = A2(_elm_lang$core$Array$get, _p1._1, _p2._0);
+			if (_p3.ctor === 'Just') {
+				return _p3._0.isAlive ? 1 : 0;
 			} else {
 				return 0;
 			}
@@ -8373,7 +8373,22 @@ var _user$project$ConwaysGameOfLife$isLivingCell = F3(
 	});
 var _user$project$ConwaysGameOfLife$getLivingNeighberNumber = F3(
 	function (rowNumber, colNumber, board) {
-		return ((((((A3(_user$project$ConwaysGameOfLife$isLivingCell, rowNumber - 1, colNumber - 1, board) + A3(_user$project$ConwaysGameOfLife$isLivingCell, rowNumber - 1, colNumber, board)) + A3(_user$project$ConwaysGameOfLife$isLivingCell, rowNumber - 1, colNumber + 1, board)) + A3(_user$project$ConwaysGameOfLife$isLivingCell, rowNumber, colNumber - 1, board)) + A3(_user$project$ConwaysGameOfLife$isLivingCell, rowNumber, colNumber + 1, board)) + A3(_user$project$ConwaysGameOfLife$isLivingCell, rowNumber + 1, colNumber - 1, board)) + A3(_user$project$ConwaysGameOfLife$isLivingCell, rowNumber + 1, colNumber, board)) + A3(_user$project$ConwaysGameOfLife$isLivingCell, rowNumber + 1, colNumber + 1, board);
+		var neighberLocations = _elm_lang$core$Native_List.fromArray(
+			[
+				{ctor: '_Tuple2', _0: rowNumber - 1, _1: colNumber - 1},
+				{ctor: '_Tuple2', _0: rowNumber - 1, _1: colNumber},
+				{ctor: '_Tuple2', _0: rowNumber - 1, _1: colNumber + 1},
+				{ctor: '_Tuple2', _0: rowNumber, _1: colNumber - 1},
+				{ctor: '_Tuple2', _0: rowNumber, _1: colNumber + 1},
+				{ctor: '_Tuple2', _0: rowNumber + 1, _1: colNumber - 1},
+				{ctor: '_Tuple2', _0: rowNumber + 1, _1: colNumber},
+				{ctor: '_Tuple2', _0: rowNumber + 1, _1: colNumber + 1}
+			]);
+		return _elm_lang$core$List$sum(
+			A2(
+				_elm_lang$core$List$map,
+				_user$project$ConwaysGameOfLife$isLivingCell(board),
+				neighberLocations));
 	});
 var _user$project$ConwaysGameOfLife$getNextCell = F4(
 	function (model, rowNumber, colNumber, cell) {
@@ -8414,9 +8429,9 @@ var _user$project$ConwaysGameOfLife$getNextModel = function (model) {
 };
 var _user$project$ConwaysGameOfLife$Stopped = {ctor: 'Stopped'};
 var _user$project$ConwaysGameOfLife$init = function () {
-	var _p2 = {ctor: '_Tuple2', _0: 80, _1: 80};
-	var numberOfRow = _p2._0;
-	var numberOfCol = _p2._1;
+	var _p4 = {ctor: '_Tuple2', _0: 80, _1: 80};
+	var numberOfRow = _p4._0;
+	var numberOfCol = _p4._1;
 	return {
 		ctor: '_Tuple2',
 		_0: {
@@ -8436,25 +8451,25 @@ var _user$project$ConwaysGameOfLife$init = function () {
 }();
 var _user$project$ConwaysGameOfLife$changeCell = F3(
 	function (rowNumber, colNumber, model) {
-		var _p3 = A2(_elm_lang$core$Array$get, rowNumber, model.board);
-		if (_p3.ctor === 'Nothing') {
+		var _p5 = A2(_elm_lang$core$Array$get, rowNumber, model.board);
+		if (_p5.ctor === 'Nothing') {
 			return model;
 		} else {
-			var _p6 = _p3._0;
-			var _p4 = A2(_elm_lang$core$Array$get, colNumber, _p6);
-			if (_p4.ctor === 'Nothing') {
+			var _p8 = _p5._0;
+			var _p6 = A2(_elm_lang$core$Array$get, colNumber, _p8);
+			if (_p6.ctor === 'Nothing') {
 				return model;
 			} else {
-				var _p5 = _p4._0;
+				var _p7 = _p6._0;
 				var newRow = A3(
 					_elm_lang$core$Array$set,
 					colNumber,
 					_elm_lang$core$Native_Utils.update(
-						_p5,
+						_p7,
 						{
-							isAlive: _elm_lang$core$Basics$not(_p5.isAlive)
+							isAlive: _elm_lang$core$Basics$not(_p7.isAlive)
 						}),
-					_p6);
+					_p8);
 				var newBoard = A3(_elm_lang$core$Array$set, rowNumber, newRow, model.board);
 				return _elm_lang$core$Native_Utils.update(
 					model,
@@ -8468,16 +8483,22 @@ var _user$project$ConwaysGameOfLife$changeCell = F3(
 var _user$project$ConwaysGameOfLife$Started = {ctor: 'Started'};
 var _user$project$ConwaysGameOfLife$update = F2(
 	function (msg, model) {
-		var _p7 = msg;
-		switch (_p7.ctor) {
-			case 'StartOrStopButtonClicked':
+		var _p9 = msg;
+		switch (_p9.ctor) {
+			case 'StartButtonClicked':
 				return {
 					ctor: '_Tuple2',
-					_0: _elm_lang$core$Native_Utils.eq(model.gameState, _user$project$ConwaysGameOfLife$Started) ? _elm_lang$core$Native_Utils.update(
+					_0: _user$project$ConwaysGameOfLife$hasLivingCellInBoard(model.board) ? _elm_lang$core$Native_Utils.update(
 						model,
-						{gameState: _user$project$ConwaysGameOfLife$Stopped}) : _elm_lang$core$Native_Utils.update(
+						{gameState: _user$project$ConwaysGameOfLife$Started}) : model,
+					_1: _elm_lang$core$Platform_Cmd$none
+				};
+			case 'StopButtonClicked':
+				return {
+					ctor: '_Tuple2',
+					_0: _elm_lang$core$Native_Utils.update(
 						model,
-						{gameState: _user$project$ConwaysGameOfLife$Started}),
+						{gameState: _user$project$ConwaysGameOfLife$Stopped}),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			case 'ResetButtonClicked':
@@ -8485,7 +8506,7 @@ var _user$project$ConwaysGameOfLife$update = F2(
 			case 'CellClicked':
 				return {
 					ctor: '_Tuple2',
-					_0: A3(_user$project$ConwaysGameOfLife$changeCell, _p7._1, _p7._0, model),
+					_0: A3(_user$project$ConwaysGameOfLife$changeCell, _p9._1, _p9._0, model),
 					_1: _elm_lang$core$Platform_Cmd$none
 				};
 			default:
@@ -8574,21 +8595,19 @@ var _user$project$ConwaysGameOfLife$viewBoard = function (model) {
 			]));
 };
 var _user$project$ConwaysGameOfLife$ResetButtonClicked = {ctor: 'ResetButtonClicked'};
-var _user$project$ConwaysGameOfLife$StartOrStopButtonClicked = {ctor: 'StartOrStopButtonClicked'};
+var _user$project$ConwaysGameOfLife$StopButtonClicked = {ctor: 'StopButtonClicked'};
+var _user$project$ConwaysGameOfLife$StartButtonClicked = {ctor: 'StartButtonClicked'};
 var _user$project$ConwaysGameOfLife$view = function (model) {
-	var getBottonText = _elm_lang$core$Native_Utils.eq(model.gameState, _user$project$ConwaysGameOfLife$Started) ? 'Stop' : 'Start';
+	var bottonMsg = _elm_lang$core$Native_Utils.eq(model.gameState, _user$project$ConwaysGameOfLife$Started) ? _user$project$ConwaysGameOfLife$StopButtonClicked : _user$project$ConwaysGameOfLife$StartButtonClicked;
+	var bottonText = _elm_lang$core$Native_Utils.eq(model.gameState, _user$project$ConwaysGameOfLife$Started) ? 'Stop' : 'Start';
 	return A2(
 		_elm_lang$html$Html$div,
 		_elm_lang$core$Native_List.fromArray(
 			[]),
 		_elm_lang$core$Native_List.fromArray(
 			[
-				A3(_user$project$ConwaysGameOfLife$viewBotton, false, _user$project$ConwaysGameOfLife$StartOrStopButtonClicked, getBottonText),
-				A3(
-				_user$project$ConwaysGameOfLife$viewBotton,
-				_elm_lang$core$Native_Utils.eq(model.gameState, _user$project$ConwaysGameOfLife$Stopped) ? false : true,
-				_user$project$ConwaysGameOfLife$ResetButtonClicked,
-				'Reset'),
+				A2(_user$project$ConwaysGameOfLife$viewBotton, bottonMsg, bottonText),
+				A2(_user$project$ConwaysGameOfLife$viewBotton, _user$project$ConwaysGameOfLife$ResetButtonClicked, 'Reset'),
 				A2(
 				_elm_lang$html$Html$div,
 				_elm_lang$core$Native_List.fromArray(
@@ -8607,10 +8626,6 @@ var _user$project$ConwaysGameOfLife$view = function (model) {
 					])),
 				_user$project$ConwaysGameOfLife$viewBoard(model)
 			]));
-};
-var _user$project$ConwaysGameOfLife$main = {
-	main: _elm_lang$html$Html_App$program(
-		{init: _user$project$ConwaysGameOfLife$init, view: _user$project$ConwaysGameOfLife$view, update: _user$project$ConwaysGameOfLife$update, subscriptions: _user$project$ConwaysGameOfLife$subscriptions})
 };
 var _user$project$Main$main = {
 	main: _elm_lang$html$Html_App$program(
