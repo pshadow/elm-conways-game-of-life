@@ -4,6 +4,8 @@ import Array exposing (Array)
 import Html exposing (..)
 import Html.Attributes exposing (style)
 import Html.Events
+import Random exposing (Generator)
+import Random.Array
 import Time exposing (Posix)
 
 
@@ -16,6 +18,8 @@ type alias Model =
     , gameState : GameState
     , cellSize : String
     , timeIntervalInSec : Float
+    , numberOfCol : Int
+    , numberOfRow : Int
     }
 
 
@@ -30,25 +34,26 @@ type alias Board =
 
 
 type alias Row =
-    Array Cell
+    Array IsAlive
 
 
-type alias Cell =
-    { isAlive : Bool }
+type alias IsAlive =
+    Bool
 
 
 init : () -> ( Model, Cmd Msg )
 init _ =
     let
-        ( numberOfRow, numberOfCol ) =
-            ( 80, 80 )
+        ( initNumberOfRow, initNumberOfCol ) =
+            ( 40, 40 )
     in
     ( { board =
-            Array.repeat numberOfRow <|
-                Array.repeat numberOfCol { isAlive = False }
+            Array.repeat initNumberOfRow <| Array.repeat initNumberOfCol False
       , gameState = Stopped
       , cellSize = "14px"
-      , timeIntervalInSec = 0.4
+      , timeIntervalInSec = 0.6
+      , numberOfCol = initNumberOfCol
+      , numberOfRow = initNumberOfRow
       }
     , Cmd.none
     )
@@ -61,6 +66,8 @@ init _ =
 type Msg
     = StartButtonClicked
     | StopButtonClicked
+    | RandomArrayReceived (Array Bool)
+    | RandomButtonClicked
     | ResetButtonClicked
     | CellClicked Int Int
     | UpdateGame Posix
@@ -82,6 +89,40 @@ update msg model =
         StopButtonClicked ->
             ( { model | gameState = Stopped }
             , Cmd.none
+            )
+
+        RandomArrayReceived randomArr ->
+            let
+                newBoard =
+                    Array.indexedMap
+                        (\rowNumber row ->
+                            Array.indexedMap
+                                (\colNumber cell ->
+                                    case Array.get (rowNumber * model.numberOfRow + colNumber) randomArr of
+                                        Nothing ->
+                                            True
+
+                                        Just bool ->
+                                            bool
+                                )
+                                row
+                        )
+                        model.board
+            in
+            ( { model | board = newBoard }
+            , Cmd.none
+            )
+
+        RandomButtonClicked ->
+            let
+                randomBoolArray : Generator (Array Bool)
+                randomBoolArray =
+                    Random.Array.array
+                        (model.numberOfCol * model.numberOfRow)
+                        (Random.weighted ( 20, True ) [ ( 80, False ) ])
+            in
+            ( { model | gameState = Stopped }
+            , Random.generate RandomArrayReceived randomBoolArray
             )
 
         ResetButtonClicked ->
@@ -109,13 +150,10 @@ changeCell rowNumber colNumber model =
                 Nothing ->
                     model
 
-                Just cell ->
+                Just isAlive ->
                     let
                         newRow =
-                            Array.set
-                                colNumber
-                                { cell | isAlive = not cell.isAlive }
-                                row
+                            Array.set colNumber (not isAlive) row
 
                         newBoard =
                             Array.set rowNumber newRow model.board
@@ -161,24 +199,24 @@ getNextRow model rowNumber row =
     Array.indexedMap (getNextCell model rowNumber) row
 
 
-getNextCell : Model -> Int -> Int -> Cell -> Cell
-getNextCell model rowNumber colNumber cell =
+getNextCell : Model -> Int -> Int -> IsAlive -> IsAlive
+getNextCell model rowNumber colNumber isAlive =
     let
         livingNeighberNumber =
             getLivingNeighberNumber rowNumber colNumber model.board
     in
-    if cell.isAlive then
+    if isAlive then
         if livingNeighberNumber < 2 || livingNeighberNumber > 3 then
-            { cell | isAlive = False }
+            False
 
         else
-            cell
+            isAlive
 
     else if livingNeighberNumber == 3 then
-        { cell | isAlive = True }
+        True
 
     else
-        cell
+        isAlive
 
 
 getLivingNeighberNumber : Int -> Int -> Board -> Int
@@ -204,8 +242,8 @@ isLivingCell board ( rowNumber, colNumber ) =
     case Array.get rowNumber board of
         Just row ->
             case Array.get colNumber row of
-                Just cell ->
-                    if cell.isAlive then
+                Just isAlive ->
+                    if isAlive then
                         1
 
                     else
@@ -228,8 +266,7 @@ hasLivingCellInBoard board =
 
 hasLivingCellInRow : Row -> Bool
 hasLivingCellInRow row =
-    Array.map (\cell -> cell.isAlive) row
-        |> Array.filter identity
+    Array.filter identity row
         |> Array.isEmpty
         |> not
 
@@ -273,6 +310,7 @@ view model =
     div []
         [ viewBotton bottonMsg bottonText
         , viewBotton ResetButtonClicked "Reset"
+        , viewBotton RandomButtonClicked "Random"
         , div
             [ style "display" "inline-block"
             , style "margin-left" "20px"
@@ -317,23 +355,22 @@ viewRow cellSize rowNumber row =
         |> div [ style "height" cellSize ]
 
 
-viewCell : String -> Int -> Int -> Cell -> Html Msg
-viewCell cellSize rowNumber colNumber cell =
+viewCell : String -> Int -> Int -> IsAlive -> Html Msg
+viewCell cellSize rowNumber colNumber isAlive =
     let
-        getBackgroundColor : Bool -> String
-        getBackgroundColor isAlive =
+        backgroundColor =
             if isAlive then
                 "#f80"
 
             else
-                "#000"
+                "#e9e9e9"
     in
     div
         [ style "display" "inline-block"
         , style "width" cellSize
         , style "height" "100%"
         , style "border" "1px solid gray"
-        , style "background-color" (getBackgroundColor cell.isAlive)
+        , style "background-color" backgroundColor
         , Html.Events.onClick <| CellClicked colNumber rowNumber
         ]
         []
